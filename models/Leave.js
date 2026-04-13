@@ -42,7 +42,10 @@ const leaveSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
-
+leaveLetter: {
+  type: String,
+  default: "", // ✅ make it required (recommended)
+},
   approvedBy: {
     type: String,
     default: "",

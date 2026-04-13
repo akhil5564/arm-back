@@ -1,27 +1,46 @@
 const express = require("express");
 const router = express.Router();
+const Lead = require("../models/Lead");
 
-const crmController = require("../controllers/crmController");
+// CREATE
+router.post("/", async (req, res) => {
+  try {
+    const lead = new Lead(req.body);
+    await lead.save();
+    res.json(lead);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+// GET ALL
+router.get("/", async (req, res) => {
+  try {
+    const leads = await Lead.find().sort({ createdAt: -1 });
+    res.json(leads);
+  } catch {
+    res.status(500).json({ error: "Fetch failed" });
+  }
+});
 
-// CRUD
-router.get("/", crmController.getLeads);
+// UPDATE
+router.put("/:id", async (req, res) => {
+  try {
+    const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(lead);
+  } catch {
+    res.status(500).json({ error: "Update failed" });
+  }
+});
 
-router.get("/my-leads/:employeeId", crmController.getMyLeads);
-
-router.post("/", crmController.createLead);
-
-router.put("/:id", crmController.updateLead);
-
-router.delete("/:id", crmController.deleteLead);
-
-
-// Notes
-router.post("/:id/notes", crmController.addNote);
-
-
-// FollowUps
-router.post("/:id/followups", crmController.addFollowUp);
-
+// DELETE
+router.delete("/:id", async (req, res) => {
+  try {
+    await Lead.findByIdAndDelete(req.params.id);
+    res.json({ message: "Deleted" });
+  } catch {
+    res.status(500).json({ error: "Delete failed" });
+  }
+});
 
 module.exports = router;

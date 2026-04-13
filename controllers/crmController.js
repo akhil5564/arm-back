@@ -74,7 +74,9 @@ exports.createLead = async (req, res) => {
       employeeId,
       status,
       notes,
-      followUps
+      followUps,
+      businessType,
+      businessName,
     } = req.body;
 
 
@@ -144,6 +146,8 @@ exports.updateLead = async (req, res) => {
     lead.phone = req.body.phone ?? lead.phone;
 
     lead.status = req.body.status ?? lead.status;
+    lead.businessType = req.body.businessType ?? lead.businessType;
+    lead.businessName = req.body.businessName ?? lead.businessName;
 
 
     // ✅ VERY IMPORTANT

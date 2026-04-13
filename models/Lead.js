@@ -3,32 +3,34 @@ const mongoose = require("mongoose");
 const leadSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  phone: { type: String },
+  phone: String,
 
-  // Assign lead to an employee by employeeId
+  businessType: String,
+  businessName: String,
+
   employeeId: { type: String, required: true },
 
-  // Lead status flow
-  status: { 
-    type: String, 
-    enum: ["New", "Contacted", "Follow-up", "Won", "Lost"], 
-    default: "New" 
+  status: {
+    type: String,
+    enum: ["New", "Contacted", "Follow-up", "Won", "Lost"],
+    default: "New",
   },
 
-  // Notes about the lead
-  notes: [{ 
-    note: String, 
-    createdAt: { type: Date, default: Date.now } 
-  }],
+  notes: [
+    {
+      note: String,
+      createdAt: { type: Date, default: Date.now },
+    },
+  ],
 
-  // Follow-up schedule
-  followUps: [{ 
-    date: Date, 
-    description: String 
-  }],
+  followUps: [
+    {
+      date: Date,
+      description: String,
+    },
+  ],
 
   createdAt: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("Lead", leadSchema);
-

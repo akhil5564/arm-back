@@ -5,45 +5,56 @@ const Attendance = require("../models/Attendance");
 const AllowedLocation = require("../models/AllowedLocation");
 const User = require("../models/User");
 
-////////////////////////////////////////////////////////
-// DISTANCE FUNCTION
-////////////////////////////////////////////////////////
+
+// distance calculation
 function getDistance(lat1, lon1, lat2, lon2) {
+
   const R = 6371e3;
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
 
   const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) *
-      Math.cos(φ2) *
-      Math.sin(Δλ / 2) *
-      Math.sin(Δλ / 2);
+    Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ/2) * Math.sin(Δλ/2);
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
   return R * c;
 }
+
+
 
 ////////////////////////////////////////////////////////
 // CHECK IN
 ////////////////////////////////////////////////////////
+
 router.post("/checkin", async (req, res) => {
+
   try {
+
     const { employeeId, name, latitude, longitude } = req.body;
 
-    if (!employeeId || !name || !latitude || !longitude) {
+    if (!employeeId || !name) {
+
       return res.status(400).json({
-        message: "Missing required fields",
+        message: "Employee ID and name required",
       });
+
     }
 
     const location = await AllowedLocation.findOne();
+
     if (!location) {
+
       return res.status(400).json({
         message: "Admin location not set",
       });
+
     }
 
     const distance = getDistance(
@@ -54,36 +65,42 @@ router.post("/checkin", async (req, res) => {
     );
 
     if (distance > location.radius) {
+
       return res.status(400).json({
-        message: "Outside allowed location",
+        message: "You are outside allowed location",
       });
+
     }
 
     const today = new Date().toISOString().split("T")[0];
 
-    let attendance = await Attendance.findOne({
+    const exists = await Attendance.findOne({
       employeeId,
       date: today,
     });
 
-    // If already exists → just return existing (no 400 error)
-    if (attendance) {
-      return res.json({
-        message: "Already checked in",
-        attendance,
+    if (exists) {
+
+      return res.status(400).json({
+        message: "Already checked in today",
       });
+
     }
 
-    attendance = new Attendance({
+    const attendance = new Attendance({
+
       employeeId,
       name,
       date: today,
+
       checkIn: {
         time: new Date(),
         latitude,
         longitude,
       },
+
       status: "Present",
+
     });
 
     await attendance.save();
@@ -92,25 +109,28 @@ router.post("/checkin", async (req, res) => {
       message: "Check-in successful",
       attendance,
     });
+
   } catch (error) {
+
     res.status(500).json({
       message: error.message,
     });
+
   }
+
 });
+
+
 
 ////////////////////////////////////////////////////////
 // CHECK OUT
 ////////////////////////////////////////////////////////
-router.post("/checkout", async (req, res) => {
-  try {
-    const { employeeId, latitude, longitude } = req.body;
 
-    if (!employeeId) {
-      return res.status(400).json({
-        message: "Employee ID required",
-      });
-    }
+router.post("/checkout", async (req, res) => {
+
+  try {
+
+    const { employeeId, latitude, longitude } = req.body;
 
     const today = new Date().toISOString().split("T")[0];
 
@@ -120,40 +140,28 @@ router.post("/checkout", async (req, res) => {
     });
 
     if (!attendance) {
+
       return res.status(400).json({
         message: "Check-in not found",
       });
+
     }
 
-    // If already checked out → return existing (no 400 spam)
     if (attendance.checkOut?.time) {
-      return res.json({
-        message: "Already checked out",
-        attendance,
-      });
-    }
 
-    const checkoutTime = new Date();
+      return res.status(400).json({
+        message: "Already checked out",
+      });
+
+    }
 
     attendance.checkOut = {
-      time: checkoutTime,
+
+      time: new Date(),
       latitude,
       longitude,
+
     };
-
-    ////////////////////////////////////////////////////////
-    // STATUS CALCULATION
-    ////////////////////////////////////////////////////////
-
-    const hour = checkoutTime.getHours();
-
-    if (hour < 13) {
-      attendance.status = "Half Day";
-    } else if (hour >= 13 && hour < 17) {
-      attendance.status = "Partial Day";
-    } else {
-      attendance.status = "Present";
-    }
 
     await attendance.save();
 
@@ -161,80 +169,82 @@ router.post("/checkout", async (req, res) => {
       message: "Check-out successful",
       attendance,
     });
+
   } catch (error) {
+
     res.status(500).json({
       message: error.message,
     });
+
   }
+
 });
 
-////////////////////////////////////////////////////////
-// GET TODAY
-////////////////////////////////////////////////////////
-router.get("/today/:employeeId", async (req, res) => {
-  try {
-    const { employeeId } = req.params;
 
-    const today = new Date().toISOString().split("T")[0];
-
-    const record = await Attendance.findOne({
-      employeeId,
-      date: today,
-    });
-
-    res.json(record || null);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-});
 
 ////////////////////////////////////////////////////////
-// ADMIN CALENDAR VIEW
+// ADMIN VIEW ATTENDANCE CALENDAR
 ////////////////////////////////////////////////////////
+
 router.get("/calendar", async (req, res) => {
+
   try {
+
     const { date } = req.query;
 
     const users = await User.find();
+
     const attendance = await Attendance.find({ date });
 
-    const result = users.map((user) => {
-      const record = attendance.find(
-        (a) => a.employeeId === user.employeeId
-      );
+    const presentIds = attendance.map(a => a.employeeId);
 
-      return {
-        employeeId: user.employeeId,
-        name: user.name,
-        status: record ? record.status : "Absent",
-      };
-    });
+    const result = users.map(user => ({
+
+      employeeId: user.employeeId,
+      name: user.name,
+
+      status: presentIds.includes(user.employeeId)
+        ? "Present"
+        : "Absent",
+
+    }));
 
     res.json(result);
+
   } catch (error) {
+
     res.status(500).json({
       message: error.message,
     });
+
   }
+
 });
 
+
+
 ////////////////////////////////////////////////////////
-// GET ALL
+// ADMIN GET ALL ATTENDANCE
 ////////////////////////////////////////////////////////
+
 router.get("/all", async (req, res) => {
+
   try {
-    const attendance = await Attendance.find().sort({
-      date: -1,
-    });
+
+    const attendance = await Attendance.find()
+      .sort({ date: -1 });
 
     res.json(attendance);
+
   } catch (error) {
+
     res.status(500).json({
       message: error.message,
     });
+
   }
+
 });
+
 
 module.exports = router;

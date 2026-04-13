@@ -20,4 +20,3 @@ const allowedLocationSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("AllowedLocation", allowedLocationSchema);
-

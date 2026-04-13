@@ -11,15 +11,28 @@ const attendanceRoutes = require("./routes/attendanceRoutes");
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/usersRoutes"));
 app.use("/api/leaves", require("./routes/leaveRoutes"));
-const adminRoutes = require("./routes/adminRoutes");
+//const adminRoutes = require("./routes/adminRoutes");
 
 const allowedLocationRoutes =require("./routes/allowedLocationRoutes");
 
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/allowedLocation",allowedLocationRoutes);
-const adminLocationRoutes = require("./routes/adminLocationRoutes");
+//const adminLocationRoutes = require("./routes/adminLocationRoutes");
+//////////////////////////////////notice///////////////
+const noticeRoutes = require("./routes/noticeRoutes");
+app.use("/api/notices", noticeRoutes);
+///////////////////////////////////////////////////
+const broadcastRoutes = require("./routes/broadcastRoutes");
+app.use("/api/broadcasts", broadcastRoutes);
+//////////////////////////////////////////////////////
+const taskRoutes = require("./routes/taskRoutes");
+app.use("/api/tasks", taskRoutes);
+/////////////////////////////////////////
+const chatRoutes = require("./routes/chatRoutes");
+app.use("/api/chats", chatRoutes);
 
-app.use("/api/admin-location", adminLocationRoutes);
+
+//app.use("/api/admin-location", adminLocationRoutes);
 //app.use("/api/attendance", attendanceRoutes);
 // TODO: add crm, attendance, leave routes
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser:true, useUnifiedTopology:true })
